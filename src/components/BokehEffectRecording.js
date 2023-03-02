@@ -17,7 +17,6 @@ export const BokehEffectRecording = () => {
             video: {
                 width: 640,
                 height: 480,
-                facingMode: "user",
             },
             audio: true,
         })
@@ -163,7 +162,6 @@ export const BokehEffectRecording = () => {
                     zindex: 9,
                 }}
             />
-
         </>
     )
 }
