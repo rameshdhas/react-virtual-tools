@@ -11,6 +11,8 @@ const SEGMENT_THRES = 100;
 
 const getNow = () => new Date().getTime();
 
+
+
 const WhiteBoard = () => {
     const canvasRef = useRef(null);
     const [mouseDown, setMouseDown] = useState(false);
