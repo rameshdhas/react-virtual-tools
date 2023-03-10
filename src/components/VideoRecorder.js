@@ -2,7 +2,7 @@ import React from "react";
 import Webcam from "react-webcam";
 import './style.css'
 
-const VideoRecorder = () => {
+const VideoRecorderOld = () => {
 
 
 
@@ -109,4 +109,4 @@ const VideoRecorder = () => {
 
 };
 
-export default VideoRecorder;
+export default VideoRecorderOld;
