@@ -1,11 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
-import Button from './button'
-import RecordButton from './record-button'
-import StopButton from './stop-button'
-import Timer from './timer'
-import Countdown from './countdown'
+import Button from './Button'
+import RecordButton from './RecordButton'
+import StopButton from './StopButton'
+import Timer from './Timer'
+import Countdown from './Countdown'
 
 const ActionsWrapper = styled.div`
 //  position: absolute;

@@ -2,9 +2,9 @@ import logo from './logo.svg';
 import './App.css';
 import MaskedBackgroundRecording from './components/MaskedBackgroundRecording'
 import BokehEffectRecording from './components/BokehEffectRecording'
-import VideoRecorderOld from './components/VideoRecorder'
+import VideoRecorderOld from './components/VideoRecorderOld'
 import Recorder from './components/Recorder'
-import VideoRecorder from './components/video-recorder'
+import VideoRecorder from './components/VideoRecorder'
 
 
 function App() {

@@ -15,7 +15,7 @@ export const captureThumb = (videoTag) =>
     }, 'image/jpeg')
   })
 
-const getVideoInfo = (videoBlob) =>
+const VideoInfo = (videoBlob) =>
   new Promise((resolve, reject) => {
     const videoTag = document.createElement('video')
     videoTag.preload = 'metadata'
@@ -78,4 +78,4 @@ const getVideoInfo = (videoBlob) =>
     videoTag.src = window.URL.createObjectURL(videoBlob)
   })
 
-export default getVideoInfo
+export default VideoInfo

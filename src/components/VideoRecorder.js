@@ -1,112 +1,864 @@
-import React from "react";
-import Webcam from "react-webcam";
-import './style.css'
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
+import merge from 'lodash.merge'
+import styled, { css } from 'styled-components'
+import fixWebmDuration from 'fix-webm-duration'
 
-const VideoRecorderOld = () => {
+import UnsupportedView from './defaults/UnsupportedView'
+import ErrorView from './defaults/ErrorView'
+import DisconnectedView from './defaults/DisconnectedView'
+import LoadingView from './defaults/LoadingView'
+import SwitchCameraView from './defaults/SwitchCameraView'
+import renderActions from './defaults/Actions'
+import VideoInfo, { captureThumb } from './defaults/VideoInfo'
+import {
+  ReactVideoRecorderDataIssueError,
+  ReactVideoRecorderRecordedBlobsUnavailableError,
+  ReactVideoRecorderDataAvailableTimeoutError,
+  ReactVideoRecorderMediaRecorderUnavailableError,
+  ReactVideoRecorderDeviceUnavailableError
+} from './defaults/CustomErrors'
 
+const MIME_TYPES = [
+  'video/webm;codecs="vp8,opus"',
+  'video/webm;codecs=h264',
+  'video/webm;codecs=vp9',
+  'video/webm',
+  'video/mp4'
+]
 
+const CONSTRAINTS = {
+  audio: true,
+  video: true
+}
 
-  return (
+const Wrapper = styled.div`
+  width: 640px;
+  height: 480px;
+  background-color: #000;
+  color: white;
+//  box-sizing: border-box;
+  * {
+    box-sizing: inherit;
+  }
+`
 
-        <div className="container mycontainer">
-        			<div className="steps">
+const CameraView = styled.div`
+`
 
-        				<div className="card" id="step-give-permissions">
-        					<h4 className="card-header">Allow camera/microphone access</h4>
-        					<div className="card-block">
-        						<p className="card-text">
-        							A popup should appear in the top-left of your screen &ndash; click "allow".
-        						</p>
-        					</div>
-        				</div>
+const Video = styled.video`
 
+`
 
+export default class VideoRecorder extends Component {
 
-        				<div className="card" id="step-test-input">
-        					<h4 className="card-header">Test your input</h4>
-        					<div className="card-block">
-        						Please ensure that:
-        						<ol>
-        							<li>
-        								Your voice registers on this bar:
-        								<div className="progress" style={{width: '350px', maxWidth: '100%'}}>
-        									<div className="progress-bar bg-success" id="test-meter" role="progressbar"></div>
-        								</div>
-        							</li>
-        							<li>
-        								You can see yourself below:
-        							</li>
-        							<video className="liveview" id="test-liveview" muted style={{width: '100%', maxWidth: '300px'}}></video>
-        						</ol>
-        						<form id="test-form" className="w-100 text-right" >
-        							<button className="btn btn-primary chevron" type="submit" id="test-submit">Looks good</button>
-        						</form>
-        					</div>
-        				</div>
+  static propTypes = {
+    /** Whether or not to start the camera initially */
+    isOnInitially: PropTypes.bool,
+    /** Whether or not to display the video flipped (makes sense for user facing camera) */
+    isFlipped: PropTypes.bool,
+    /** Pass this if you want to force a specific mime-type for the video */
+    mimeType: PropTypes.string,
+    /** How much time to wait until it starts recording (in ms) */
+    countdownTime: PropTypes.number,
+    /** Use this if you want to set a time limit for the video (in ms) */
+    timeLimit: PropTypes.number,
+    /** Use this if you want to show play/pause/etc. controls on the replay video */
+    showReplayControls: PropTypes.bool,
+    /** Use this to turn off autoplay and looping of the replay video. It is recommended to also showReplayControls in order to play */
+    replayVideoAutoplayAndLoopOff: PropTypes.bool,
+    /** Use this if you want to customize the constraints passed to getUserMedia() */
+    constraints: PropTypes.shape({
+      audio: PropTypes.any,
+      video: PropTypes.any
+    }),
+    chunkSize: PropTypes.number,
+    dataAvailableTimeout: PropTypes.number,
+    useVideoInput: PropTypes.bool,
+    /** Use this to configure the replaying video element's controlslist attribute */
+    videoControlsList: PropTypes.string,
+    /** Use this to disable picture in picture mode on the replaying video element */
+    disablePictureInPicture: PropTypes.bool,
 
+    renderDisconnectedView: PropTypes.func,
+    renderLoadingView: PropTypes.func,
+    renderVideoInputView: PropTypes.func,
+    renderUnsupportedView: PropTypes.func,
+    renderErrorView: PropTypes.func,
+    renderActions: PropTypes.func,
 
-        				<div className="card" id="step-record">
-        					<h4 className="card-header"><span className="record-icon"></span> Record video</h4>
-        					<div className="liveview-overlay-wrapper">
-        						<video className="liveview card-img-top w-100" id="record-liveview" muted></video>
-        						<div className="liveview-overlay fade-at-countdown-end"></div>
+    cameraViewClassName: PropTypes.string,
+    videoClassName: PropTypes.string,
+    wrapperClassName: PropTypes.string,
 
-        						<div className="liveview-overlay-content-wrapper fade-at-countdown-end">
-        							<div className="countdown-inner">
-        								<form id="record-start-form">
-        									<button className="btn btn-danger btn-lg chevron" type="submit" id="record-start-submit">Start Recording</button>
-        								</form>
-        								<div>
-        									<h1 className="countdown-number">3</h1>
-        								</div>
-        								<div>
-        									<h1 className="countdown-number">2</h1>
-        								</div>
-        								<div>
-        									<h1 className="countdown-number">1</h1>
-        								</div>
-        								<div>
-        									<h1 className="countdown-number">Go!</h1>
-        								</div>
-        							</div>
-        						</div>
-        					</div>
-        					<div className="card-block">
-        						<form id="record-form" className="w-100 text-right" >
-        							<span className="recording-timer-outer">Recorded for <span className="recording-timer">0:00</span></span> <button className="btn btn-primary chevron" disabled type="submit" id="record-submit">Stop and upload</button>
-        						</form>
-        					</div>
-        				</div>
+    /** Use this to localize the texts */
+    t: PropTypes.func,
 
+    onCameraOn: PropTypes.func,
+    onTurnOnCamera: PropTypes.func,
+    onSwitchCamera: PropTypes.func,
+    onTurnOffCamera: PropTypes.func,
+    onStartRecording: PropTypes.func,
+    onStopRecording: PropTypes.func,
+    onPauseRecording: PropTypes.func,
+    onResumeRecording: PropTypes.func,
+    onRecordingComplete: PropTypes.func,
+    onOpenVideoInput: PropTypes.func,
+    onStopReplaying: PropTypes.func,
+    onError: PropTypes.func
+  }
 
-        				<div className="card" id="step-finalise-upload">
-        					<h4 className="card-header">Finish upload</h4>
-        					<div className="card-block">
-        						<div className="alert alert-warning">
-        							<strong>Hold on!</strong> Please do not close this page until the upload completes:
-        						</div>
+  static defaultProps = {
+    renderUnsupportedView: () => <UnsupportedView />,
+    renderErrorView: () => <ErrorView />,
+    renderVideoInputView: ({ videoInput }) => <>{videoInput}</>,
+    renderDisconnectedView: () => <DisconnectedView />,
+    renderLoadingView: () => <LoadingView />,
+    t: (x) => x,
+    renderActions,
+    isFlipped: true,
+    countdownTime: 3000,
+    constraints: CONSTRAINTS,
+    chunkSize: 250,
+    dataAvailableTimeout: 500
+  }
 
-        						<div className="progress">
-        							<div id="progress-meter" className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
-        						</div>
-        					</div>
-        				</div>
+  videoInput = React.createRef()
 
+  isComponentUnmounted = false
 
-        				<div className="card" id="step-success">
-        					<h4 className="card-header">Done</h4>
-        					<div className="card-block">
-        						<div className="alert alert-success">
-        							<strong>Success!</strong> Your video has been uploaded to Google Drive. <span className="only-if-folder-not-specified">It is not in any folder: you may wish to open Google Drive now and move it into place.</span>
-        						</div>
-        					</div>
-        				</div>
-        			</div>
+  timeSinceInactivity = 0
 
-        		</div>
+  lastRecordingTimestamp = 0
+  recordingDuration = 0
 
-  );
+  state = {
+    isRecording: false,
+    isCameraOn: false,
+    isConnecting: false,
+    isReplayingVideo: false,
+    isReplayVideoMuted: true,
+    thereWasAnError: false,
+    error: null,
+    streamIsReady: false,
+    isInlineRecordingSupported: null,
+    isVideoInputSupported: null,
+    stream: undefined,
+    currentDeviceId: null,
+    availableDeviceIds: []
+  }
 
-};
+  componentDidMount () {
+    const isInlineRecordingSupported =
+      !!window.MediaRecorder && !!navigator.mediaDevices
 
-export default VideoRecorderOld;
+    const isVideoInputSupported =
+      document.createElement('input').capture !== undefined
+
+    this.setState(
+      {
+        isInlineRecordingSupported,
+        isVideoInputSupported
+      },
+      () => {
+        if (this.props.useVideoInput && this.props.isOnInitially) {
+          this.handleOpenVideoInput()
+        } else if (
+          this.state.isInlineRecordingSupported &&
+          this.props.isOnInitially
+        ) {
+          this.turnOnCamera()
+        } else if (
+          this.state.isVideoInputSupported &&
+          this.props.isOnInitially
+        ) {
+          this.handleOpenVideoInput()
+        }
+      }
+    )
+  }
+
+  componentDidUpdate (prevProps, prevState) {
+    if (
+      this.replayVideo &&
+      this.state.isReplayingVideo &&
+      !prevState.isReplayingVideo
+    ) {
+      this.tryToUnmuteReplayVideo()
+    }
+
+    if (
+      this.state.isCameraOn !== prevState.isCameraOn &&
+      this.state.isCameraOn
+    ) {
+      // Only if the cameraVideo ref is available
+      if (window.URL && this.cameraVideo) {
+        this.cameraVideo.srcObject = this.state.stream
+      } else {
+        this.cameraVideo.src = this.state.stream
+      }
+    }
+  }
+
+  componentWillUnmount () {
+    this.turnOffCamera()
+    this.isComponentUnmounted = true
+  }
+
+  turnOnCamera = (deviceId = null) => {
+    if (this.props.onTurnOnCamera) {
+      this.props.onTurnOnCamera()
+    }
+
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((mediaDevices) => {
+        const videoDevices = mediaDevices.filter((x) => x.kind === 'videoinput')
+        if (
+          deviceId &&
+          videoDevices[0] &&
+          videoDevices.find((x) => x.deviceId) === undefined
+        ) {
+          return this.handleError(
+            new ReactVideoRecorderDeviceUnavailableError()
+          )
+        }
+
+        const currentDeviceId =
+          typeof deviceId === 'string' ? deviceId : videoDevices[0].deviceId
+
+        this.setState({
+          isConnecting: true,
+          isReplayingVideo: false,
+          thereWasAnError: false,
+          currentDeviceId,
+          availableDeviceIds: videoDevices.map((x) => x.deviceId),
+          error: null
+        })
+
+        console.log("debug1")
+
+        const fallbackContraints = {
+          audio: true,
+          video: true
+        }
+
+        const currentConstraints = merge(
+          {
+            video: {
+              deviceId: {
+                exact: currentDeviceId
+              }
+            }
+          },
+          this.props.constraints
+        )
+
+        console.log("debug2")
+        navigator.mediaDevices
+          .getUserMedia(currentConstraints)
+          .catch((err) => {
+            // there's a bug in chrome in some windows computers where using `ideal` in the constraints throws a NotReadableError
+            if (
+              err.name === 'NotReadableError' ||
+              err.name === 'OverconstrainedError'
+            ) {
+              console.warn(
+                `Got ${err.name}, trying getUserMedia again with fallback constraints`
+              )
+              return navigator.mediaDevices.getUserMedia(fallbackContraints)
+            }
+            throw err
+          })
+          .then(this.handleSuccess)
+          .catch(this.handleError)
+      })
+      .catch(this.handleError)
+  }
+
+  handleSwitchCamera = () => {
+    if (this.props.onSwitchCamera) {
+      this.props.onSwitchCamera()
+    }
+    const { currentDeviceId, availableDeviceIds } = this.state
+    // Stop media tracks
+    this.stream && this.stream.getTracks().forEach((stream) => stream.stop())
+
+    const index = availableDeviceIds.findIndex((x) => x === currentDeviceId)
+    const maxIndex = availableDeviceIds.length - 1
+
+    if (index < 0) {
+      return this.handleError(new ReactVideoRecorderDeviceUnavailableError())
+    }
+
+    if (index + 1 > maxIndex) return this.turnOnCamera(availableDeviceIds[0])
+    return this.turnOnCamera(availableDeviceIds[index + 1])
+  }
+
+  turnOffCamera = () => {
+    if (this.props.onTurnOffCamera) {
+      this.props.onTurnOffCamera()
+    }
+
+    this.stream && this.stream.getTracks().forEach((stream) => stream.stop())
+    this.setState({
+      isCameraOn: false
+    })
+    clearInterval(this.inactivityTimer)
+  }
+
+  handleSuccess = (stream) => {
+    console.log('handleSuccess')
+
+    // Since handleSuccess is an async function, we may be in a situation where this was called after the
+    // component was unmounted
+//    if (this.isComponentUnmounted) {
+//      return
+//    }
+
+    this.stream = stream
+    this.setState({
+      isCameraOn: true,
+      stream: stream
+    })
+    if (this.props.onCameraOn) {
+      this.props.onCameraOn()
+    }
+
+    // there is probably a better way
+    // but this makes sure the start recording button
+    // gives the stream a couple miliseconds to be ready
+    setTimeout(() => {
+      console.log("calling setTimeout");
+
+      this.setState({
+        isConnecting: false,
+        streamIsReady: true
+      })
+    }, 200)
+  }
+
+  handleError = (err) => {
+    const { onError } = this.props
+
+    if (onError) {
+      onError(err)
+    }
+
+    if (this.isComponentUnmounted) {
+      return
+    }
+
+    console.error('Captured error', err)
+
+    clearTimeout(this.timeLimitTimeout)
+
+    this.setState({
+      isConnecting: this.state.isConnecting && false,
+      isRecording: false,
+      thereWasAnError: true,
+      error: err
+    })
+
+    if (this.state.isCameraOn) {
+      this.turnOffCamera()
+    }
+  }
+
+  handleDataIssue = (event) => {
+    const error = new ReactVideoRecorderDataIssueError(event)
+    console.error(error.message, event)
+    this.handleError(error)
+    return false
+  }
+
+  getMimeType = () => {
+    if (this.props.mimeType) {
+      return this.props.mimeType
+    }
+
+    const mimeType = window.MediaRecorder.isTypeSupported
+      ? MIME_TYPES.find(window.MediaRecorder.isTypeSupported)
+      : 'video/webm'
+
+    return (this.mediaRecorder && this.mediaRecorder.mimeType) || mimeType || ''
+  }
+
+  isDataHealthOK = (event) => {
+    if (!event.data) return this.handleDataIssue(event)
+
+    const { chunkSize } = this.props
+
+    const dataCheckInterval = 2000 / chunkSize
+
+    // in some browsers (FF/S), data only shows up
+    // after a certain amount of time ~everyt 2 seconds
+    const blobCount = this.recordedBlobs.length
+    if (blobCount > dataCheckInterval && blobCount % dataCheckInterval === 0) {
+      const blob = new window.Blob(this.recordedBlobs, {
+        type: this.getMimeType()
+      })
+      if (blob.size <= 0) return this.handleDataIssue(event)
+    }
+
+    return true
+  }
+
+  tryToUnmuteReplayVideo = () => {
+    const video = this.replayVideo
+    video.muted = false
+
+    const playPromise = video.play()
+    if (!playPromise) {
+      video.muted = true
+      return
+    }
+
+    playPromise
+      .then(() => {
+        this.setState({ isReplayVideoMuted: false })
+        // fixes bug where seeking control during autoplay is not available until the video is almost completely played through
+        if (this.props.replayVideoAutoplayAndLoopOff) {
+          video.pause()
+          video.loop = false
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not autoplay replay video', err)
+        video.muted = true
+        return video.play()
+      })
+      .catch((err) => {
+        console.warn('Could play muted replay video after failed autoplay', err)
+      })
+  }
+
+  handleDataAvailable = (event) => {
+    if (this.isDataHealthOK(event)) {
+      this.recordedBlobs.push(event.data)
+    }
+  }
+
+  getTotalEllapsedTimeInMs = () =>
+    Date.now() - this.lastRecordingTimestamp + this.recordingDuration
+
+  handleStopRecording = () => {
+    if (this.props.onStopRecording) {
+      this.props.onStopRecording()
+    }
+
+    if (!this.mediaRecorder) {
+      this.handleError(new ReactVideoRecorderMediaRecorderUnavailableError())
+      return
+    }
+
+    this.mediaRecorder.stop()
+    this.recordingDuration = this.getTotalEllapsedTimeInMs()
+  }
+
+  handlePauseRecording = () => {
+    if (this.props.onPauseRecording) {
+      this.props.onPauseRecording()
+    }
+
+    if (!this.mediaRecorder) {
+      this.handleError(new ReactVideoRecorderMediaRecorderUnavailableError())
+      return
+    }
+
+    this.mediaRecorder.pause()
+    this.recordingDuration = this.getTotalEllapsedTimeInMs()
+  }
+
+  handleResumeRecording = () => {
+    if (this.props.onResumeRecording) {
+      this.props.onResumeRecording()
+    }
+
+    if (!this.mediaRecorder) {
+      this.handleError(new ReactVideoRecorderMediaRecorderUnavailableError())
+      return
+    }
+
+    this.mediaRecorder.resume()
+    this.lastRecordingTimestamp = Date.now()
+  }
+
+  handleStartRecording = () => {
+    if (this.props.onStartRecording) {
+      this.props.onStartRecording()
+    }
+
+    this.setState({
+      isRunningCountdown: true,
+      isReplayingVideo: false
+    })
+
+    setTimeout(() => this.startRecording(), this.props.countdownTime)
+  }
+
+  startRecording = () => {
+    captureThumb(this.cameraVideo).then((thumbnail) => {
+      this.thumbnail = thumbnail
+
+      this.recordedBlobs = []
+      const options = {
+        mimeType: this.getMimeType()
+      }
+
+      try {
+        this.setState({
+          isRunningCountdown: false,
+          isRecording: true
+        })
+        this.startedAt = new Date().getTime()
+        this.mediaRecorder = new window.MediaRecorder(this.stream, options)
+        this.mediaRecorder.addEventListener('stop', this.handleStop)
+        this.mediaRecorder.addEventListener('error', this.handleError)
+        this.mediaRecorder.addEventListener(
+          'dataavailable',
+          this.handleDataAvailable
+        )
+
+        const { timeLimit, chunkSize, dataAvailableTimeout } = this.props
+        this.mediaRecorder.start(chunkSize) // collect 10ms of data
+        this.lastRecordingTimestamp = Date.now()
+        this.recordingDuration = 0
+
+        if (timeLimit) {
+          this.timeLimitTimeout = setTimeout(() => {
+            this.handleStopRecording()
+          }, timeLimit)
+        }
+
+        // mediaRecorder.ondataavailable should be called every 10ms,
+        // as that's what we're passing to mediaRecorder.start() above
+        if (Number.isInteger(dataAvailableTimeout)) {
+          setTimeout(() => {
+            if (this.recordedBlobs.length === 0) {
+              this.handleError(
+                new ReactVideoRecorderDataAvailableTimeoutError(
+                  dataAvailableTimeout
+                )
+              )
+            }
+          }, dataAvailableTimeout)
+        }
+      } catch (err) {
+        console.error("Couldn't create MediaRecorder", err, options)
+        this.handleError(err)
+      }
+    })
+  }
+
+  handleStop = (event) => {
+    const endedAt = new Date().getTime()
+
+    if (!this.recordedBlobs || this.recordedBlobs.length <= 0) {
+      const error = new ReactVideoRecorderRecordedBlobsUnavailableError(event)
+      console.error(error.message, event)
+      this.handleError(error)
+      return
+    }
+
+    clearTimeout(this.timeLimitTimeout)
+
+    const videoBlob =
+      this.recordedBlobs.length === 1
+        ? this.recordedBlobs[0]
+        : new window.Blob(this.recordedBlobs, {
+          type: this.getMimeType()
+        })
+
+    const thumbnailBlob = this.thumbnail
+    const startedAt = this.startedAt
+    const duration = endedAt - startedAt
+
+    // if this gets executed too soon, the last chunk of data is lost on FF
+    this.mediaRecorder.ondataavailable = null
+
+    this.fixVideoMetadata(videoBlob).then((fixedVideoBlob) => {
+      this.setState({
+        isRecording: false,
+        isReplayingVideo: true,
+        isReplayVideoMuted: true,
+        fixedVideoBlob,
+        videoUrl: window.URL.createObjectURL(fixedVideoBlob)
+      })
+
+      this.turnOffCamera()
+
+      this.props.onRecordingComplete(
+        fixedVideoBlob,
+        startedAt,
+        thumbnailBlob,
+        duration
+      )
+    })
+  }
+
+  // see https://bugs.chromium.org/p/chromium/issues/detail?id=642012
+  fixVideoMetadata = (rawVideoBlob) => {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    if (isSafari) {
+      return Promise.resolve(rawVideoBlob)
+    }
+    // see https://stackoverflow.com/a/63568311
+    Blob.prototype.arrayBuffer ??= function () {
+      return new Response(this).arrayBuffer()
+    }
+
+    return fixWebmDuration(rawVideoBlob, this.recordingDuration)
+  }
+
+  handleVideoSelected = (e) => {
+    if (this.state.isReplayingVideo) {
+      this.setState({
+        isReplayingVideo: false
+      })
+    }
+
+    const files = e.target.files || e.dataTransfer.files
+    if (files.length === 0) return
+
+    const startedAt = new Date().getTime()
+    const video = files[0]
+
+    e.target.value = null
+
+    const extension = video.type === 'video/quicktime' ? 'mov' : undefined
+
+    VideoInfo(video)
+      .then(({ duration, thumbnail }) => {
+        this.setState({
+          isRecording: false,
+          isReplayingVideo: true,
+          isReplayVideoMuted: true,
+          videoBlob: video,
+          videoUrl: window.URL.createObjectURL(video)
+        })
+
+        this.props.onRecordingComplete(
+          video,
+          startedAt,
+          thumbnail,
+          duration,
+          extension
+        )
+      })
+      .catch((err) => {
+        this.handleError(err)
+      })
+  }
+
+  handleOpenVideoInput = () => {
+    if (this.props.onOpenVideoInput) {
+      this.props.onOpenVideoInput()
+    }
+
+    this.videoInput.current.value = null
+    this.videoInput.current.click()
+
+    // fixes a bug on iPhone where it doesn't save the recorded video on the second time (if you press the 'Use another video' button)
+    this.videoInput.current.addEventListener('change', this.handleVideoSelected)
+  }
+
+  handleStopReplaying = () => {
+    if (this.props.onStopReplaying) {
+      this.props.onStopReplaying()
+    }
+
+    if (this.props.useVideoInput && this.props.isOnInitially) {
+      return this.handleOpenVideoInput()
+    }
+
+    this.setState({
+      isReplayingVideo: false
+    })
+
+    if (this.state.isInlineRecordingSupported && this.props.isOnInitially) {
+      this.turnOnCamera()
+    } else if (this.state.isVideoInputSupported && this.props.isOnInitially) {
+      this.handleOpenVideoInput()
+    }
+  }
+
+  handleReplayVideoClick = () => {
+    if (this.replayVideo.paused && !this.props.showReplayControls) {
+      this.replayVideo.play()
+    }
+
+    // fixes bug where seeking control during autoplay is not available until the video is almost completely played through
+    if (!this.props.replayVideoAutoplayAndLoopOff) {
+      this.setState({
+        isReplayVideoMuted: !this.state.isReplayVideoMuted
+      })
+    }
+  }
+
+  renderCameraView () {
+    const {
+      cameraViewClassName,
+      showReplayControls,
+      videoControlsList,
+      disablePictureInPicture,
+      replayVideoAutoplayAndLoopOff,
+      renderDisconnectedView,
+      renderVideoInputView,
+      renderUnsupportedView,
+      renderErrorView,
+      renderLoadingView,
+      useVideoInput,
+      videoClassName
+    } = this.props
+
+    const {
+      isVideoInputSupported,
+      isReplayingVideo,
+      isInlineRecordingSupported,
+      thereWasAnError,
+      error,
+      isCameraOn,
+      isConnecting,
+      isReplayVideoMuted,
+      isRecording,
+      availableDeviceIds
+    } = this.state
+
+    const shouldUseVideoInput =
+      useVideoInput || (!isInlineRecordingSupported && isVideoInputSupported)
+
+    const videoInput = shouldUseVideoInput ? (
+      <input
+        ref={this.videoInput}
+        key='videoInput'
+        type='file'
+        accept='video/*'
+        capture={useVideoInput ? undefined : 'user'}
+        style={{ display: 'none' }}
+        onChange={this.handleVideoSelected}
+      />
+    ) : null
+
+    if (isReplayingVideo) {
+      return (
+        <CameraView key='replay' className={cameraViewClassName}>
+          <Video
+            ref={(el) => (this.replayVideo = el)}
+            className={videoClassName}
+            src={this.state.videoUrl}
+            loop
+            muted={isReplayVideoMuted}
+            playsInline
+            autoPlay={!replayVideoAutoplayAndLoopOff}
+            controls={showReplayControls}
+            onClick={this.handleReplayVideoClick}
+            onDurationChange={this.handleDurationChange}
+            controlsList={videoControlsList}
+            disablePictureInPicture={disablePictureInPicture}
+          />
+          {videoInput}
+        </CameraView>
+      )
+    }
+
+    if (shouldUseVideoInput) {
+      return renderVideoInputView({ videoInput })
+    }
+
+    if (!isInlineRecordingSupported) {
+      return renderUnsupportedView()
+    }
+
+    if (thereWasAnError) {
+      return renderErrorView({ error })
+    }
+
+    if (isCameraOn) {
+      // Enable switch camera button, only if not recording and multiple video sources available
+      const switchCameraControl =
+        availableDeviceIds && availableDeviceIds.length >= 2 && !isRecording ? (
+          <SwitchCameraView onClick={this.handleSwitchCamera} />
+        ) : null
+
+      return (
+        <CameraView key='camera'>
+          <Video
+            isFlipped={this.props.isFlipped}
+            ref={(el) => (this.cameraVideo = el)}
+            autoPlay
+            muted
+            playsInline
+          />
+          {switchCameraControl}
+        </CameraView>
+      )
+    }
+
+    if (isConnecting) {
+      return renderLoadingView()
+    }
+
+//    return renderDisconnectedView()
+  }
+
+  render () {
+    const {
+      isVideoInputSupported,
+      isInlineRecordingSupported,
+      thereWasAnError,
+      isRecording,
+      isCameraOn,
+      streamIsReady,
+      isConnecting,
+      isRunningCountdown,
+      isReplayingVideo,
+      isReplayVideoMuted
+    } = this.state
+
+    const {
+      countdownTime,
+      timeLimit,
+      showReplayControls,
+      replayVideoAutoplayAndLoopOff,
+      renderActions,
+      t,
+      useVideoInput,
+      wrapperClassName
+    } = this.props
+
+    return (
+      <Wrapper>
+        {this.renderCameraView()}
+        {renderActions({
+          t,
+          isVideoInputSupported,
+          isInlineRecordingSupported,
+          thereWasAnError,
+          isRecording,
+          isCameraOn,
+          streamIsReady,
+          isConnecting,
+          isRunningCountdown,
+          isReplayingVideo,
+          isReplayVideoMuted,
+          countdownTime,
+          timeLimit,
+          showReplayControls,
+          replayVideoAutoplayAndLoopOff,
+          useVideoInput,
+
+          onTurnOnCamera: () => this.turnOnCamera(),
+          onSwitchCamera: this.handleSwitchCamera,
+          onTurnOffCamera: this.turnOffCamera,
+          onOpenVideoInput: this.handleOpenVideoInput,
+          onStartRecording: this.handleStartRecording,
+          onStopRecording: this.handleStopRecording,
+          onPauseRecording: this.handlePauseRecording,
+          onResumeRecording: this.handleResumeRecording,
+          onStopReplaying: this.handleStopReplaying
+        })}
+      </Wrapper>
+    )
+  }
+}
