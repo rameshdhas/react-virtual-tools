@@ -13,13 +13,13 @@ function App() {
 
   return (
     <div className="App">
-     {/*<VideoRecorder
+     <VideoRecorder
          mimeType={'video/webm'}
          countdownTime={3000}
          timeLimit={25000}
          {...actionLoggers}
-       />*/}
-        <MaskedBackgroundRecording/>
+       />
+       {/* <MaskedBackgroundRecording/>*/}
     </div>
   );
 }

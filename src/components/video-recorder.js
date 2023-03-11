@@ -33,48 +33,21 @@ const CONSTRAINTS = {
 }
 
 const Wrapper = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  min-height: 300px;
+  width: 640px;
+  height: 480px;
   background-color: #000;
   color: white;
-  box-sizing: border-box;
+//  box-sizing: border-box;
   * {
     box-sizing: inherit;
   }
 `
 
 const CameraView = styled.div`
-  width: 100%;
-  height: 100%;
 `
 
 const Video = styled.video`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-height: 100%;
-  min-width: 100%;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  ${(props) =>
-    props.isFlipped &&
-    css`
-      transform: translate(-50%, -50%) scaleX(-1);
-    `};
-  ${(props) =>
-    props.onClick &&
-    css`
-      cursor: pointer;
-    `};
+
 `
 
 export default class VideoRecorder extends Component {
@@ -801,7 +774,6 @@ export default class VideoRecorder extends Component {
       return renderErrorView({ error })
     }
 
-    console.log("isCameraOn "+ isCameraOn)
     if (isCameraOn) {
       // Enable switch camera button, only if not recording and multiple video sources available
       const switchCameraControl =
@@ -827,7 +799,7 @@ export default class VideoRecorder extends Component {
       return renderLoadingView()
     }
 
-    return renderDisconnectedView()
+//    return renderDisconnectedView()
   }
 
   render () {
@@ -856,7 +828,7 @@ export default class VideoRecorder extends Component {
     } = this.props
 
     return (
-      <Wrapper className={wrapperClassName}>
+      <Wrapper>
         {this.renderCameraView()}
         {renderActions({
           t,
