@@ -33,7 +33,7 @@ const ButtonBorder = styled.div`
 const Instructions = styled.div`
   font-family: Arial;
   font-size: 14px;
-  color: #ffffff;
+  color: #aaa;
   letter-spacing: 1.75px;
   display: flex;
   margin-bottom: 20px;
