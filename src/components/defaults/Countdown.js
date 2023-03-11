@@ -3,6 +3,10 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 
 const Root = styled.div`
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-family: Menlo, monospace;
   font-size: 100px;
   text-shadow: 1px 2px rgba(0, 0, 0, 0.5);
