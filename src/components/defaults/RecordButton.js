@@ -19,9 +19,9 @@ const Button = styled.button`
 `
 
 const RecWrapper = styled.div`
-//  display: flex;
-//  flex-direction: column;
-//  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `
 
 const ButtonBorder = styled.div`

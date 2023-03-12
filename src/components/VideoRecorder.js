@@ -828,7 +828,7 @@ export default class VideoRecorder extends Component {
     } = this.props
 
     return (
-      <Wrapper>
+      <Wrapper className={wrapperClassName}>
         {this.renderCameraView()}
         {renderActions({
           t,

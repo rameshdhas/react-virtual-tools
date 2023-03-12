@@ -6,6 +6,9 @@ const Text = styled.div`
 //  position: absolute;
 //  top: 50px;
 //  right: 50px;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
   font-family: Menlo, monospace;
   font-size: 28px;
   text-shadow: 1px 2px rgba(0, 0, 0, 0.5);
@@ -16,9 +19,8 @@ const RecIcon = styled.div`
   height: 16px;
   background: #e55226;
   border-radius: 50%;
-  float: left;
-  margin: 2px 8px;
-  margin-left: 0;
+  margin: 12px 8px;
+//  margin-left: 0;
 `
 
 class Timer extends Component {

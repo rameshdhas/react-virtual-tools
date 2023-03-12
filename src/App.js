@@ -16,7 +16,7 @@ function App() {
      <VideoRecorder
          mimeType={'video/webm'}
          countdownTime={3000}
-         timeLimit={25000}
+         timeLimit={60000}
          {...actionLoggers}
        />
        {/* <MaskedBackgroundRecording/>*/}
