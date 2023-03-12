@@ -104,7 +104,7 @@ const Actions = ({
       </Button>
     ) : (
       <Button type='button' onClick={onTurnOnCamera} data-qa='turn-on-camera'>
-        {t('Turn my camera ON')}
+        {t('Turn Camera ON')}
       </Button>
     )
   }
