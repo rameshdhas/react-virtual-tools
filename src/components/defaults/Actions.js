@@ -42,6 +42,7 @@ const Actions = ({
   onPauseRecording,
   onResumeRecording,
   onStopReplaying,
+  onDownloadVideo,
   onConfirm
 }) => {
   const renderContent = () => {
@@ -59,6 +60,15 @@ const Actions = ({
 
     if (isReplayingVideo) {
       return (
+        <>
+        <Button
+          type='button'
+          onClick={onDownloadVideo}
+          data-qa='download-video'
+        >
+          {t('Download video')}
+        </Button>
+
         <Button
           type='button'
           onClick={onStopReplaying}
@@ -66,6 +76,7 @@ const Actions = ({
         >
           {t('Use another video')}
         </Button>
+        </>
       )
     }
 
@@ -143,6 +154,7 @@ Actions.propTypes = {
   onPauseRecording: PropTypes.func,
   onResumeRecording: PropTypes.func,
   onStopReplaying: PropTypes.func,
+  onDownloadVideo: PropTypes.func,
   onConfirm: PropTypes.func
 }
 

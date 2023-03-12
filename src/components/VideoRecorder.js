@@ -264,8 +264,6 @@ export default class VideoRecorder extends Component {
           error: null
         })
 
-        console.log("debug1")
-
         const fallbackContraints = {
           audio: true,
           video: true
@@ -282,7 +280,6 @@ export default class VideoRecorder extends Component {
           this.props.constraints
         )
 
-        console.log("debug2")
         navigator.mediaDevices
           .getUserMedia(currentConstraints)
           .catch((err) => {
@@ -336,8 +333,6 @@ export default class VideoRecorder extends Component {
   }
 
   handleSuccess = (stream) => {
-    console.log('handleSuccess')
-
     // Since handleSuccess is an async function, we may be in a situation where this was called after the
     // component was unmounted
 //    if (this.isComponentUnmounted) {
@@ -711,6 +706,23 @@ export default class VideoRecorder extends Component {
     }
   }
 
+  handleDownloadVideo = () => {
+//    if (this.videoBlob) {
+//        const blob = new Blob(recordedChunks, {
+//            type: "video/webm"
+//        });
+        const url = URL.createObjectURL(this.state.fixedVideoBlob);
+        const a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        a.href = url;
+        a.download = "react-webcam-stream-capture.webm";
+        a.click();
+        window.URL.revokeObjectURL(url);
+//        setRecordedChunks([]);
+//    }
+  }
+
   handleReplayVideoClick = () => {
     if (this.replayVideo.paused && !this.props.showReplayControls) {
       this.replayVideo.play()
@@ -884,7 +896,8 @@ export default class VideoRecorder extends Component {
           onStopRecording: this.handleStopRecording,
           onPauseRecording: this.handlePauseRecording,
           onResumeRecording: this.handleResumeRecording,
-          onStopReplaying: this.handleStopReplaying
+          onStopReplaying: this.handleStopReplaying,
+          onDownloadVideo: this.handleDownloadVideo,
         })}
       </Wrapper>
     )
