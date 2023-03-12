@@ -3,12 +3,9 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 
 const Text = styled.div`
-//  position: absolute;
-//  top: 50px;
-//  right: 50px;
-  z-index: 5;
-  display: flex;
-  justify-content: center;
+  position: absolute;
+  top: 50px;
+  right: 50px;
   font-family: Menlo, monospace;
   font-size: 28px;
   text-shadow: 1px 2px rgba(0, 0, 0, 0.5);
@@ -19,8 +16,9 @@ const RecIcon = styled.div`
   height: 16px;
   background: #e55226;
   border-radius: 50%;
+  float: left;
   margin: 12px 8px;
-//  margin-left: 0;
+  margin-left: 0;
 `
 
 class Timer extends Component {

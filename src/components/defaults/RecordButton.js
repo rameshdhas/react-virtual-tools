@@ -3,20 +3,20 @@ import styled from 'styled-components'
 import PropTypes from 'prop-types'
 
 const Button = styled.button`
-  background: ${(props) => props.backgroundColor};
-  color: ${(props) => props.color};
-  border-radius: 50%;
-  width: 64px;
-  height: 64px;
-  background: rgba(227, 73, 28, 0.8);
-  outline: none;
-  border: none;
-  cursor: pointer;
-  z-index: 5;
-  :hover {
-    background: #fb6d42;
-  }
-`
+    background: ${(props) => props.backgroundColor};
+    color: ${(props) => props.color};
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    background: rgba(227, 73, 28, 0.8);
+    outline: none;
+    border: none;
+    cursor: pointer;
+    z-index: 5;
+    :hover {
+      background: #fb6d42;
+    }
+  `
 
 const RecWrapper = styled.div`
   display: flex;

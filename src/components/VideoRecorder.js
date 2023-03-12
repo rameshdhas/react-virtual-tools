@@ -33,22 +33,50 @@ const CONSTRAINTS = {
 }
 
 const Wrapper = styled.div`
-  width: 640px;
-  height: 480px;
-  background-color: #000;
-  color: white;
-//  box-sizing: border-box;
-  * {
-    box-sizing: inherit;
-  }
-`
+   position: relative;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   width: 100%;
+   height: 100%;
+   overflow: hidden;
+   min-height: 500px;
+   background-color: #000;
+   color: white;
+   box-sizing: border-box;
+   * {
+     box-sizing: inherit;
+   }
+`;
 
 const CameraView = styled.div`
-`
+   width: 100%;
+   height: 100%;
+`;
 
 const Video = styled.video`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-height: 100%;
+  min-width: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  ${(props) =>
+    props.isFlipped &&
+    css`
+      transform: translate(-50%, -50%) scaleX(-1);
+    `};
+  ${(props) =>
+    props.onClick &&
+    css`
+      cursor: pointer;
+    `};
+`;
 
-`
 
 export default class VideoRecorder extends Component {
 
