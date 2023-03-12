@@ -66,7 +66,15 @@ const Actions = ({
           onClick={onDownloadVideo}
           data-qa='download-video'
         >
-          {t('Download video')}
+          {t('Submit')}
+        </Button>
+
+        <Button
+          type='button'
+          onClick={onDownloadVideo}
+          data-qa='download-video'
+        >
+          {t('Play')}
         </Button>
 
         <Button
@@ -74,7 +82,7 @@ const Actions = ({
           onClick={onStopReplaying}
           data-qa='start-replaying'
         >
-          {t('Use another video')}
+          {t('Retake')}
         </Button>
         </>
       )
