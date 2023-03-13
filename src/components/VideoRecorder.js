@@ -854,7 +854,7 @@ export default class VideoRecorder extends Component {
       return renderLoadingView()
     }
 
-//    return renderDisconnectedView()
+    return renderDisconnectedView()
   }
 
   render () {
