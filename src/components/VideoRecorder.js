@@ -42,7 +42,8 @@ const Wrapper = styled.div`
    height: 100%;
    overflow: hidden;
    min-height: 500px;
-   background-color: #000;
+   border-radius: 4px;
+   background-color: #AFEEEE;
    color: white;
    box-sizing: border-box;
    * {
