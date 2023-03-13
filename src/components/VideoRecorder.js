@@ -152,6 +152,7 @@ export default class VideoRecorder extends Component {
   }
 
   videoInput = React.createRef()
+  canvasReference = React.createRef()
 
   isComponentUnmounted = false
 
@@ -729,11 +730,11 @@ export default class VideoRecorder extends Component {
     }
 
     // fixes bug where seeking control during autoplay is not available until the video is almost completely played through
-    if (!this.props.replayVideoAutoplayAndLoopOff) {
-      this.setState({
-        isReplayVideoMuted: !this.state.isReplayVideoMuted
-      })
-    }
+//    if (!this.props.replayVideoAutoplayAndLoopOff) {
+//      this.setState({
+//        isReplayVideoMuted: !this.state.isReplayVideoMuted
+//      })
+//    }
   }
 
   renderCameraView () {
@@ -830,7 +831,20 @@ export default class VideoRecorder extends Component {
             muted
             playsInline
           />
+          <canvas
+                          ref={this.canvasReference}
+                          id="canvas"
+                          style={{
+                              position: "absolute",
+                              left: 0,
+                              right: 0,
+                              margin: "auto",
+                              zindex: 9,
+                          }}
+                      />
+
           {switchCameraControl}
+
         </CameraView>
       )
     }
@@ -898,6 +912,7 @@ export default class VideoRecorder extends Component {
           onResumeRecording: this.handleResumeRecording,
           onStopReplaying: this.handleStopReplaying,
           onDownloadVideo: this.handleDownloadVideo,
+          onPlayVideo: this.handleReplayVideoClick,
         })}
       </Wrapper>
     )

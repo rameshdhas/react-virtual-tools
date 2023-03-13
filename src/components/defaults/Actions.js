@@ -43,7 +43,8 @@ const Actions = ({
   onResumeRecording,
   onStopReplaying,
   onDownloadVideo,
-  onConfirm
+  onPlayVideo,
+  onConfirm,
 }) => {
   const renderContent = () => {
     const shouldUseVideoInput =
@@ -71,7 +72,7 @@ const Actions = ({
 
         <Button
           type='button'
-          onClick={onDownloadVideo}
+          onClick={onPlayVideo}
           data-qa='download-video'
         >
           {t('Play')}
@@ -163,6 +164,7 @@ Actions.propTypes = {
   onResumeRecording: PropTypes.func,
   onStopReplaying: PropTypes.func,
   onDownloadVideo: PropTypes.func,
+  onPlayVideo: PropTypes.func,
   onConfirm: PropTypes.func
 }
 
